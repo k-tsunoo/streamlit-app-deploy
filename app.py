@@ -49,11 +49,11 @@ def get_llm_response(user_text, expert_type):
 # Streamlit UI
 # -------------------------
 
-st.title("サンプルアプリ③ : AI専門家アドバイザー")
+st.title("AI健康専門家アドバイザー")
 
 st.write("### アプリ概要")
 st.write("""
-このアプリでは生成AIが専門家として質問に回答します。
+このアプリでは健康、運動、栄養に関する質問に対して生成AIが専門家として回答するアプリです。
 
 【使い方】
 
