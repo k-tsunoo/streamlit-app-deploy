@@ -1,45 +1,89 @@
 import streamlit as st
+import os
+from dotenv import load_dotenv
 
-st.title("サンプルアプリ②: 少し複雑なWebアプリ")
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from langchain.chains import LLMChain
 
-st.write("##### 動作モード1: 文字数カウント")
-st.write("入力フォームにテキストを入力し、「実行」ボタンを押すことで文字数をカウントできます。")
-st.write("##### 動作モード2: BMI値の計算")
-st.write("身長と体重を入力することで、肥満度を表す体型指数のBMI値を算出できます。")
+# APIキー読み込み
+load_dotenv()
 
-selected_item = st.radio(
-    "動作モードを選択してください。",
-    ["文字数カウント", "BMI値の計算"]
-)
+# LLM呼び出し関数
+def get_llm_response(user_text, expert_type):
+
+    # 専門家ごとのシステムメッセージ
+    system_messages = {
+        "健康アドバイザー": "あなたは健康管理の専門家です。健康維持や生活習慣についてわかりやすくアドバイスしてください。",
+        "スポーツインストラクター": "あなたはスポーツ指導の専門家です。運動方法やトレーニングについてわかりやすくアドバイスしてください。",
+        "栄養アドバイザー": "あなたは栄養学の専門家です。食事や栄養バランスについてわかりやすくアドバイスしてください。"
+    }
+
+    system_message = system_messages.get(expert_type)
+
+    # プロンプト作成
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_message),
+        ("human", "{question}")
+    ])
+
+    # LLM設定
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+
+    # LangChain
+    chain = LLMChain(llm=llm, prompt=prompt)
+
+    # LLM実行
+    result = chain.run(question=user_text)
+
+    return result
+
+
+# -------------------------------
+# Streamlit UI
+# -------------------------------
+
+st.title("サンプルアプリ③: LLMアドバイザー")
+
+st.write("### アプリ概要")
+st.write("""
+このアプリでは、生成AIに専門家としてアドバイスをしてもらうことができます。
+
+以下の手順で利用してください。
+
+1. 専門家の種類を選択します  
+2. 質問内容を入力します  
+3. 「実行」ボタンを押します  
+
+AIが選択した専門家として回答します。
+""")
 
 st.divider()
 
-if selected_item == "文字数カウント":
-    input_message = st.text_input(label="文字数のカウント対象となるテキストを入力してください。")
-    text_count = len(input_message)
+# 専門家選択
+selected_expert = st.radio(
+    "専門家の種類を選択してください。",
+    ["健康アドバイザー", "スポーツインストラクター", "栄養アドバイザー"]
+)
 
-else:
-    height = st.text_input(label="身長（cm）を入力してください。")
-    weight = st.text_input(label="体重（kg）を入力してください。")
+# 入力フォーム
+input_text = st.text_input("質問内容を入力してください。")
 
+st.divider()
+
+# 実行ボタン
 if st.button("実行"):
-    st.divider()
 
-    if selected_item == "文字数カウント":
-        if input_message:
-            st.write(f"文字数: **{text_count}**")
+    if input_text:
 
-        else:
-            st.error("カウント対象となるテキストを入力してから「実行」ボタンを押してください。")
+        with st.spinner("AIが回答を生成しています..."):
+
+            answer = get_llm_response(input_text, selected_expert)
+
+        st.divider()
+
+        st.write("### AIからの回答")
+        st.write(answer)
 
     else:
-        if height and weight:
-            try:
-                bmi = round(int(weight) / ((int(height)/100) ** 2), 1)
-                st.write(f"BMI値: {bmi}")
-
-            except ValueError as e:
-                st.error("身長と体重は数値で入力してください。")
-
-        else:
-            st.error("身長と体重をどちらも入力してください。")
+        st.error("質問内容を入力してください。")
